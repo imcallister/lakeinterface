@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "lake_interface"
+  site-url: "https://imcallister.github.io/lake_interface"
+  description: ""
+  repo-branch: main
+  repo-url: "https://github.com/imcallister/lake_interface"
