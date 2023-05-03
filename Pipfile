@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pandas = "==2.0.0"
+pandas = "*"
 boto3 = "*"
-nbdev = "==2.3.12"
+nbdev = "*"
 jupyterlab = "==3.6.3"
 jupyterlab-quarto = "*"
 
