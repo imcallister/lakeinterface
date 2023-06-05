@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "core.html",
+    "href": "core.html",
+    "title": "core",
+    "section": "",
+    "text": "source\n\nfoo\n\n foo ()"
+  },
+  {
+    "objectID": "99_utilities.html",
+    "href": "99_utilities.html",
+    "title": "lakeinterface",
+    "section": "",
+    "text": "source\n\nfunc_timer\n\n func_timer (func)\n\n\n@timer_func\ndef long_time(n):\n    for i in range(n):\n        for j in range(100000):\n            i*j\n  \n  \nlong_time(5)\n\nFunction 'long_time' executed in 0.0258s"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "lake_interface",
+    "section": "",
+    "text": "This file will become your README and also the index of your documentation."
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "lake_interface",
+    "section": "Install",
+    "text": "Install\nYou will need pandas, jupyterlab and nbdev.\n$ pip install pandas==2.0.0\n$ pip install boto3==1.26.114\n$ pip install nbdev==2.3.12\n$ pip install jupyterlab==3.6.3\n\nThere are a couple of nbdev extensions needed:\n$ nbdev_install_hooks\n$ nbdev_install_quarto\n$ pip install jupyterlab-quarto==0.1.45\nDocumentation can be viewed locally with\n$ nbdev_preview"
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "lake_interface",
+    "section": "How to use",
+    "text": "How to use\nFill me in please! Don’t forget code examples:\n\n1+1\n\n2"
+  },
+  {
+    "objectID": "datalake.html",
+    "href": "datalake.html",
+    "title": "datalake",
+    "section": "",
+    "text": "Lake Interface class\nExample of configurations.\n\nprofile field refers to the name of the aws profile defined in ~/.aws/credentials\n\n\nLAKE_CONFIGS = {\n    'machinesp': {\n        'profile': 'machinesp',\n        'default_bucket': 'machinesp-bank-datasets',\n        'query_results_location': 'athena_results',\n        'athena_workgroup': 'bankdata'\n    },\n    'local': {\n        'profile': 'default',\n        'default_bucket': 'machinesp-datasets',\n        'query_results_location': 'athena_results',\n        'athena_workgroup': 'primary'\n    }\n}\n\nInitializing lake interface\n\nli = LakeInterface(\n    config=LAKE_CONFIGS['machinesp']\n)\n\n\n\nUtilities\nFunctions for Common tasks\n\n\nInitialize interface to the lake\n\ncan pass a default bucket to be used and AWS profile (locally usually from ~/.aws/credentials)\n\nLake interface includes function to list objects with a certain S3 location prefix\n\nli.list_objects(prefix='banks/call_reports/staging')[:5]\n\n['banks/call_reports/staging/',\n 'banks/call_reports/staging/FFIEC CDR Call Bulk All Schedules 03312001.zip',\n 'banks/call_reports/staging/FFIEC CDR Call Bulk All Schedules 03312002.zip',\n 'banks/call_reports/staging/FFIEC CDR Call Bulk All Schedules 03312003.zip',\n 'banks/call_reports/staging/FFIEC CDR Call Bulk All Schedules 03312004.zip']\n\n\n\nLoading raw files\nRaw files can be loaded with specific implementations based on the various forms of data\n\nsched = 'RCA'\n\ndf = li.load_csv(\n    'banks/call_reports/raw/20210331/FFIEC CDR Call Schedule RCA 03312021.txt', \n    delimiter='\\t',\n    skiprows=[1]\n)\n\ndf[~df['RCFD0010'].map(pd.isnull)].head()\n\n\n\n\n\n\n\n\nIDRSSD\nRCFD0010\nRCFD0022\nRCFD0070\nRCFD0082\nRCFD0090\nRCON0010\nRCON0020\nRCON0070\nRCON0080\nRCON0082\nRCON0090\nUnnamed: 12\n\n\n\n\n46\n12311\n8497788.0\n856297.0\n21919.0\n126173.0\n7493399.0\n8497788.0\n271551.0\n21919.0\n584746.0\n126173.0\n7493399.0\nNaN\n\n\n110\n30810\n20156640.0\n436232.0\n0.0\n947713.0\n18772695.0\n20156640.0\n435969.0\n0.0\n263.0\n947713.0\n18772695.0\nNaN\n\n\n130\n35301\n111590000.0\n12000.0\n58482000.0\n3340000.0\n49756000.0\n54170000.0\n12000.0\n1062000.0\n0.0\n3340000.0\n49756000.0\nNaN\n\n\n224\n60143\n14858000.0\n993000.0\n357000.0\n33000.0\n13475000.0\n14548000.0\n530000.0\n47000.0\n463000.0\n33000.0\n13475000.0\nNaN\n\n\n239\n63069\n5874285.0\n395888.0\n70856.0\n51696.0\n5355845.0\n5874285.0\n260420.0\n70856.0\n135468.0\n51696.0\n5355845.0\nNaN\n\n\n\n\n\n\n\n\n\nPut objects to lake\nThe put action saves to S3 in a standard format\n\ndf = df[[c for c in df.columns if 'Unnamed:' not in c]]\nli.put(\n    'test/put_example',\n    df\n)\n\n'Saved to test/put_example/data.parquet'\n\n\n\n\nSaving json to lake\n\nd = [{'a': 1, 'b': 2}, {'a': 4, 'c': 2}]\n\n\nli.save_json('test/save_json', d)\n\nTrue\n\n\n\nli.load_json('test/save_json/data.json')\n\n[{'a': 1, 'b': 2}, {'a': 4, 'c': 2}]\n\n\n\n\nGet objects\n\nli.get('test/put_example')\n\n\n\n\n\n\n\n\nIDRSSD\nRCFD0010\nRCFD0022\nRCFD0070\nRCFD0082\nRCFD0090\nRCON0010\nRCON0020\nRCON0070\nRCON0080\nRCON0082\nRCON0090\n\n\n\n\n0\n37\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n1\n242\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n2\n279\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n3\n354\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n4\n457\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n\n\n5022\n5518023\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n5023\n5538937\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n5024\n5561001\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n5025\n5574430\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n5026\n5582846\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\nNaN\n\n\n\n\n5027 rows × 12 columns\n\n\n\n\n\n\nAthena queries\n\ndb_name = 'bankdata'\ntable_name = 'call_report_sched_ci'\nquery = f\"SELECT COUNT(*) from {db_name}.{table_name}\"\n\nresp = li.start_query(query, 'count rows in ci')\n\nInterface stores list of Athena queries\n\nli.queries\n\n[{'query_def': 'SELECT COUNT(*) from bankdata.call_report_sched_ci',\n  'query_id': 'count rows in ci',\n  'execution_id': '9372cd85-286f-4ae1-bc1b-422789f95485'}]\n\n\nThe query id is used to retrieve the query results\n\nli.get_query_results('count rows in ci')\n\n\n\n\n\n\n\n\n_col0\n\n\n\n\n0\n107073"
+  }
+]
