@@ -5,6 +5,9 @@ __all__ = []
 
 # %% ../nbs/01_datalake.ipynb 2
 import boto3
+import json
+import yaml
+from pathlib import Path
 from io import BytesIO
 import zipfile
 import pandas as pd
@@ -15,12 +18,26 @@ class S3ObjectNotFound(Exception):
     pass
 
 
+class LakeConfigNotFound(Exception):
+    pass
+
+
 class LakeInterface():
 
     def __init__(
         self,
         config
     ):
+        if type(config) == str:
+            # load from local config file
+            try:
+                conf = yaml.safe_load(Path(f'{Path.home()}/.bankdata_config.yml').read_text())
+                config_name = config
+                config = conf['lake_interface'].get(config_name)
+                if config is None:
+                    raise LakeConfigNotFound(f'config {config_name} not in Lake config')
+            except Exception as e:
+                raise LakeConfigNotFound(e)
 
         session = boto3.session.Session(profile_name=config.get('profile', 'default'))
         self.session=session
@@ -41,17 +58,35 @@ class LakeInterface():
             else:
                 raise
 
-    def load_csv(self,key,bucket=None, delimiter=',', skiprows=None):
+    def load_csv(self,key,bucket=None, delimiter=',', skiprows=None, line_terminator=None):
         obj = self.get_object(key, bucket=bucket or self.bucket)
-        return pd.read_csv(obj['Body'], delimiter=delimiter, skiprows=skiprows)
+        if line_terminator:
+            return pd.read_csv(obj['Body'], delimiter=delimiter, skiprows=skiprows, lineterminator=line_terminator)
+        else:
+            return pd.read_csv(obj['Body'], delimiter=delimiter, skiprows=skiprows)
+    
+    
+    def load_json(self, key, output_format='json'):
+        obj = self.get_object(key)
+        return json.loads(obj['Body'].read())
+        
     
     def list_objects(self, prefix, bucket=None):
-        response = self.s3.list_objects_v2(
-            Bucket=bucket or self.bucket,
-            Prefix=prefix
-        )
-        return [o['Key'] for o in response['Contents']]
+        
+        paginator = self.s3.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=bucket or self.bucket, Prefix=prefix)
 
+        return sum([[obj['Key'] for obj in page['Contents']] for page in pages], [])
+    
+
+    def save_json(self, path, data, bucket=None, timestamp=None):
+        if timestamp:
+            key = f'{path}/timestamp={timestamp}/data.json'
+        else:
+            key = f'{path}/data.json'
+
+        return self.put_object(key, json.dumps(data), bucket=bucket)
+        
     def put_object(self, key, data, metadata={}, bucket=None):
         try:
             resp = self.s3.put_object(
@@ -161,17 +196,26 @@ class LakeInterface():
         query = next(query_result_gen)
         
         if query:
-            response = self.athena.get_query_results(
-                QueryExecutionId=query.get('execution_id')
+            results_paginator = self.athena.get_paginator('get_query_results')
+            results_iter = results_paginator.paginate(
+                QueryExecutionId=query.get('execution_id'),
+                PaginationConfig={
+                    'PageSize': 1000
+                }
             )
-
-            rslt = response.get('ResultSet')
-            data = [[e['VarCharValue'] for e in row['Data']] for row in rslt['Rows']]
+            
+            data = []
+            for rslt_page in results_iter:
+                page_data = [[e.get('VarCharValue') for e in row['Data']] for row in rslt_page['ResultSet']['Rows']]
+                data.append(page_data)
+            
+            
             return pd.DataFrame(columns=data[0], data=data[1:])
         else:
             return None
 
-# %% ../nbs/01_datalake.ipynb 10
+
+# %% ../nbs/01_datalake.ipynb 11
 def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None, include_pattern=None):
     logs = [
         '-' * 30,
