@@ -31,4 +31,5 @@ d = { 'settings': { 'branch': 'main',
                                     'lakeinterface.lake.LakeInterface.start_query': ( 'datalake.html#lakeinterface.start_query',
                                                                                       'lakeinterface/lake.py'),
                                     'lakeinterface.lake.S3ObjectNotFound': ('datalake.html#s3objectnotfound', 'lakeinterface/lake.py'),
-                                    'lakeinterface.lake.unzip': ('datalake.html#unzip', 'lakeinterface/lake.py')}}}
+                                    'lakeinterface.lake.unzip': ('datalake.html#unzip', 'lakeinterface/lake.py')},
+            'lakeinterface.utilities': {'lakeinterface.utilities.func_timer': ('utilities.html#func_timer', 'lakeinterface/utilities.py')}}}
