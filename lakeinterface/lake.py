@@ -263,7 +263,7 @@ def parse_column_info(cols):
 def parse_table_info(raw_table):
     return {
         'table_name': raw_table['Name'],
-        'databse_name': raw_table['DatabaseName'],
+        'database_name': raw_table['DatabaseName'],
         'location': raw_table['StorageDescriptor']['Location'],
         'columns': parse_column_info(raw_table['StorageDescriptor']['Columns'])
     }
