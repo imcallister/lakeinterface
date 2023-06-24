@@ -2,5 +2,9 @@ website:
   sidebar:
     contents:
       - index.ipynb
-      - 00_core.ipynb
-      - 01_datalake.ipynb
+      - 01_config.ipynb
+      - 02_s3.ipynb
+      - 03_aurora.ipynb
+      - 04_athena.ipynb
+      - 10_datalake.ipynb
+      - 99_utilities.ipynb

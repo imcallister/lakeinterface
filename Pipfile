@@ -9,6 +9,8 @@ boto3 = "*"
 nbdev = "*"
 jupyterlab = "==3.6.3"
 jupyterlab-quarto = "*"
+psycopg2-binary = "*"
+pyarrow = "*"
 
 [dev-packages]
 
