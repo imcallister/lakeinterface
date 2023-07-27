@@ -3,6 +3,7 @@ website:
     contents:
       - index.ipynb
       - 01_config.ipynb
+      - 01a_logger.ipynb
       - 02_s3.ipynb
       - 03_aurora.ipynb
       - 04_athena.ipynb

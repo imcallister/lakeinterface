@@ -3,14 +3,14 @@
 # %% auto 0
 __all__ = []
 
-# %% ../nbs/03_aurora.ipynb 3
+# %% ../nbs/03_aurora.ipynb 2
 from lakeinterface.config import ConfigManager
 import json
 import psycopg2
 import boto3
-import pandas as pd
+import polars as pl
 
-# %% ../nbs/03_aurora.ipynb 4
+# %% ../nbs/03_aurora.ipynb 3
 class Aurora(object):
     """
     A class to wrap connections to an AWS Aurora postgres cluster.
@@ -50,13 +50,11 @@ class Aurora(object):
 
     def __new__(cls, config, profile_name='default'):
         if cls._instance is None:
-            print('Creating the object')
             cls._instance = super(Aurora, cls).__new__(cls)
             # Put any initialization here.
         return cls._instance
     
     def __init__(self, config, profile_name='default'):
-        print('init-ing', self.__dict__)
         self.session = boto3.session.Session(profile_name=profile_name)
         
         self.write_host = config['aurora_writedb']
@@ -77,7 +75,6 @@ class Aurora(object):
         )
         
     def close_connections(self):
-        print('Closing connections')
         self.write_conn.close()
         self.read_conn.close()
         
@@ -108,7 +105,10 @@ class Aurora(object):
                 col_names = [desc[0] for desc in cursor.description]
                 data = cursor.fetchall()
                 self.read_conn.commit()
-                return pd.DataFrame(data=data, columns=col_names)
+                
+                df = pl.DataFrame(data, schema=col_names, orient='row')
+
+                return df
             except Exception as e:
                 self.read_conn.commit()
                 raise e

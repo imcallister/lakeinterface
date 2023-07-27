@@ -3,16 +3,18 @@
 # %% auto 0
 __all__ = ['S3ObjectNotFound', 'Datalake']
 
-# %% ../nbs/02_s3.ipynb 3
+# %% ../nbs/02_s3.ipynb 2
 import boto3
-import pandas as pd
+import polars as pl
+import s3fs
 import json
+
 from io import BytesIO
 
 from lakeinterface.config import ConfigManager
 
 
-# %% ../nbs/02_s3.ipynb 5
+# %% ../nbs/02_s3.ipynb 3
 class S3ObjectNotFound(Exception):
     pass
 
@@ -66,17 +68,16 @@ class Datalake(object):
 
     def __new__(cls, config, profile_name='default'):
         if cls._instance is None:
-            print('Creating the object')
             cls._instance = super(Datalake, cls).__new__(cls)
             # Put any initialization here.
         return cls._instance
     
     def __init__(self, config, profile_name='default'):
-        print('init-ing', self.__dict__)
         self.session = boto3.session.Session(profile_name=profile_name)
         
         self.bucket = config.get('bucket')
         self.s3 = self.session.client('s3')
+        self.fs = s3fs.S3FileSystem(profile=profile_name)
         
     def get_object(self, key):
         try:
@@ -87,18 +88,31 @@ class Datalake(object):
             else:
                 raise
 
-    def load_csv(self,key, delimiter=',', skiprows=None, line_terminator=None):
+    def load_csv(self,key, separator=',', skiprows=None, line_terminator=None):
         obj = self.get_object(key)
         if line_terminator:
-            return pd.read_csv(obj['Body'], delimiter=delimiter, skiprows=skiprows, lineterminator=line_terminator)
+            return pl.read_csv(obj['Body'], separator=separator, lineterminator=line_terminator)
         else:
-            return pd.read_csv(obj['Body'], delimiter=delimiter, skiprows=skiprows)
+            return pl.read_csv(obj['Body'], separator=separator)
     
     
     def load_json(self, key):
         obj = self.get_object(key)
         return json.loads(obj['Body'].read())
-        
+    
+    def load_parquet(self, key):
+        obj = self.get_object(key)
+        return pl.read_parquet(BytesIO(obj['Body'].read()))
+    
+    def get(self, path):
+        try:
+            key = self.most_recent(path)
+        except Exception as e:
+            print(f'No objects found with path: {key}. {e}')
+            return None
+
+        return self.load_parquet(key)
+    
     
     def list_objects(self, prefix):
         
@@ -131,25 +145,18 @@ class Datalake(object):
         except Exception as e:
             raise Exception(f'Unknown error in put object for {key}. {str(e)}')
 
+    
             
     def put(self, path, df, timestamp=None):
         if timestamp:
-            key = f'{path}/timestamp={timestamp}/data.parquet'
+            key = f'{path}/{timestamp}/data.parquet'
         else:
             key = f'{path}/data.parquet'
 
-        out_buffer = BytesIO()
-        df.to_parquet(
-            out_buffer,
-            index=True,
-            engine='pyarrow',
-            compression='gzip',
-            allow_truncated_timestamps=True
-        )
-        if self.put_object(key, out_buffer.getvalue()):
-            return f'Saved to {key}'
-        else:
-            return f'Unknown error in save_parquet: {key}'
+        with self.fs.open(f'{self.bucket}/{key}', mode='wb') as f:
+            df.write_parquet(f)
+        
+        return
     
     def most_recent(self, prefix):
         matched_objects = self.list_objects(prefix=prefix)
@@ -164,13 +171,4 @@ class Datalake(object):
             return matched_objects[0]
 
     
-    def get(self, path):
-        try:
-            key = self.most_recent(path)
-        except Exception as e:
-            print(f'No objects found with path: {key}. {e}')
-            return None
 
-        resp = self.get_object(key)
-        return pd.read_parquet(BytesIO(resp['Body'].read()))
-    
