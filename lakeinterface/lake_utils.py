@@ -40,8 +40,8 @@ SUPPORTED_LOG_HANDLERS = set(LOG_HANDLERS.keys())
 
 # %% ../nbs/10_datalake.ipynb 5
 def load_lake_interfaces(
-    config_name=None,
-    logger_name='default',
+    config_name='bankdata',
+    logger_name='bankdata',
     aws_profile=None,
     interface_names=[],
     log_handlers=[]

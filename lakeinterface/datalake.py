@@ -8,6 +8,7 @@ import boto3
 import polars as pl
 import s3fs
 import json
+from dateutil.parser import parse
 
 from io import BytesIO
 
@@ -15,6 +16,16 @@ from lakeinterface.config import ConfigManager
 
 
 # %% ../nbs/02_s3.ipynb 3
+def most_recent(keys, prefix):
+    dates = [
+        o.replace(prefix, '').replace('data.parquet', '').replace('/', '')
+        for o in keys
+    ]
+    latest = max(parse(d) for d in dates).strftime('%Y%m%d')
+    return f'{prefix}/{latest}/data.parquet'
+
+
+# %% ../nbs/02_s3.ipynb 4
 class S3ObjectNotFound(Exception):
     pass
 
@@ -162,8 +173,11 @@ class Datalake(object):
         matched_objects = self.list_objects(prefix=prefix)
         
         if len(matched_objects) > 1:
-            print(f'Multiple objects found for prefix {prefix}')
-            return None
+            try:
+                return most_recent(matched_objects, prefix)
+            except:
+                print(f'Multiple objects found for prefix {prefix}. Unable to find most recent.')
+                return None
         elif len(matched_objects) == 0:
             print(f'No objects found for prefix {prefix}')
             return None
