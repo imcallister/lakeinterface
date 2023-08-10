@@ -5,7 +5,6 @@ __all__ = ['LakeConfigNotFound', 'Athena']
 
 # %% ../nbs/04_athena.ipynb 2
 import boto3
-import pandas as pd
 
 from lakeinterface.config import ConfigManager
 from lakeinterface.datalake import Datalake
@@ -73,6 +72,12 @@ class Athena():
         return response
 
     
+    def get_query_status(self, execution_id):
+        response = self.athena.get_query_execution(
+            QueryExecutionId=execution_id
+        )
+        return response['QueryExecution']['Status']['State']
+        
     def get_query_results(self, query_id):
         query_result_gen = (
             q for q in self.queries
@@ -82,21 +87,26 @@ class Athena():
         query = next(query_result_gen)
         
         if query:
-            results_paginator = self.athena.get_paginator('get_query_results')
-            results_iter = results_paginator.paginate(
-                QueryExecutionId=query.get('execution_id'),
-                PaginationConfig={
-                    'PageSize': 1000
-                }
-            )
-            
-            data = []
-            for rslt_page in results_iter:
-                page_data = [[e.get('VarCharValue') for e in row['Data']] for row in rslt_page['ResultSet']['Rows']]
-                data.append(page_data)
-            
-            
-            return pd.DataFrame(columns=data[0], data=data[1:])
+            status = (self.get_query_status(query['execution_id']))
+            if status == 'SUCCEEDED':
+                results_paginator = self.athena.get_paginator('get_query_results')
+                results_iter = results_paginator.paginate(
+                    QueryExecutionId=query.get('execution_id'),
+                    PaginationConfig={
+                        'PageSize': 1000
+                    }
+                )
+
+                data = []
+                for rslt_page in results_iter:
+                    page_data = [[e.get('VarCharValue') for e in row['Data']] for row in rslt_page['ResultSet']['Rows']]
+                    data.append(page_data)
+
+                #return pd.DataFrame(columns=data[0], data=data[1:])
+                return data
+            else:
+                print(f'Query not complete. Status: {status}')
+                return None
         else:
             return None
 
