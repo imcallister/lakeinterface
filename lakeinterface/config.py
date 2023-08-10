@@ -5,6 +5,7 @@ __all__ = ['ConfigManager']
 
 # %% ../nbs/01_config.ipynb 2
 import boto3
+import os
 
 # %% ../nbs/01_config.ipynb 3
 class ConfigManager:
@@ -28,11 +29,14 @@ class ConfigManager:
     
     """
     
-    def __init__(self, profile='default'):
-        if profile:
-            session = boto3.session.Session(profile_name=profile)
-        else:
+    def __init__(self, profile=None):
+        if os.getenv('SERVER')=='true':
             session = boto3.session.Session()
+        else:
+            if profile:
+                session = boto3.session.Session(profile_name=profile)
+            else:
+                session = boto3.session.Session()
             
         self.manager = session.client('ssm')
 

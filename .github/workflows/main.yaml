@@ -20,6 +20,9 @@ jobs:
         aws-region: us-east-1
         role-to-assume: arn:aws:iam::686411429410:role/github_actions
         role-session-name: lakeinterface-github-actions
+    - name: Set env variable
+      run: |
+        echo "{SERVER}={true}" >> "$SERVER_ENV"
     - name: Run tests
       run: |
         nbdev_test
