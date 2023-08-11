@@ -25,5 +25,3 @@ jobs:
         nbdev_test
     - name: Deploy github pages
       uses: fastai/workflows/quarto-ghp@master
-      with:
-        python-version: '3.11'
