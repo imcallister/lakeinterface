@@ -23,5 +23,3 @@ jobs:
     - name: Run tests
       run: |
         nbdev_test
-    - name: Deploy github pages
-      uses: fastai/workflows/quarto-ghp@master
