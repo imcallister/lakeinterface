@@ -63,8 +63,7 @@ def load_lake_interfaces(
         logger = Logger()
         logger.configure(
             [LOG_HANDLERS.get(h) for h in log_handlers], 
-            logger_name=logger_name, 
-            aws_profile=aws_profile
+            logger_name=logger_name
         )
 
     cfgmgr = ConfigManager(profile=aws_profile)
