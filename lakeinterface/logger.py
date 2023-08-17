@@ -55,7 +55,7 @@ class Logger:
         else:
             return logging.getLogger()
     
-    def configure(self, handlers_config, logger_name=None, aws_profile='default'):
+    def configure(self, handlers_config, logger_name=None):
         logger = self.get_logger(logger_name)
         
         for h in handlers_config:
