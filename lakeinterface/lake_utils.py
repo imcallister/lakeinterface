@@ -46,13 +46,7 @@ def load_lake_interfaces(
     interface_names=[],
     log_handlers=[]
 ):
-    
-    if config_name is None:
-        raise Exception('load_lake_interfaces: no config specified')
-    
-    if aws_profile is None:
-        raise Exception('load_lake_interfaces: no AWS Profile specified')
-        
+            
     unsupported_interfaces = list(set(interface_names) - SUPPORTED_INTERFACES)
     if len(unsupported_interfaces) > 0:
         raise Exception(f'Unsupported interfaces.\

@@ -54,7 +54,7 @@ class Aurora(object):
             # Put any initialization here.
         return cls._instance
     
-    def __init__(self, config, profile_name='default'):
+    def __init__(self, config, profile_name=None):
         self.session = boto3.session.Session(profile_name=profile_name)
         
         self.write_host = config['aurora_writedb']

@@ -77,13 +77,13 @@ class Datalake(object):
     """
     _instance = None
 
-    def __new__(cls, config, profile_name='default'):
+    def __new__(cls, config, profile_name=None):
         if cls._instance is None:
             cls._instance = super(Datalake, cls).__new__(cls)
             # Put any initialization here.
         return cls._instance
     
-    def __init__(self, config, profile_name='default'):
+    def __init__(self, config, profile_name=None):
         self.session = boto3.session.Session(profile_name=profile_name)
         
         self.bucket = config.get('bucket')
