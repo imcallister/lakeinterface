@@ -25,7 +25,6 @@ CLOUDWATCH_LOG_HANDLER = {
     'log_group_name': 'machinesp/test', 
     'log_stream_name': 'lake_tester', 
     'level': logging.DEBUG, 
-    'aws_profile_name': 'personal',
     'format': '%(levelname)s - %(message)s'
 }
 
