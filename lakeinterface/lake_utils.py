@@ -77,11 +77,11 @@ def load_lake_interfaces(
         
     return interfaces
 
-# %% ../nbs/10_datalake.ipynb 9
+# %% ../nbs/10_datalake.ipynb 10
 from io import BytesIO
 import zipfile
 
-# %% ../nbs/10_datalake.ipynb 10
+# %% ../nbs/10_datalake.ipynb 11
 def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None, include_pattern=None):
     logs = [
         '-' * 30,
@@ -116,7 +116,7 @@ def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None,
     return logs
 
 
-# %% ../nbs/10_datalake.ipynb 12
+# %% ../nbs/10_datalake.ipynb 13
 def func_timer(func):
     # This function shows the execution time of 
     # the function object passed
