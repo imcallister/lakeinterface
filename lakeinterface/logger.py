@@ -139,6 +139,11 @@ def log(logger_name=None, exception_handling=None):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             kwargs['logger'] = logger
+            logger.add_stream_handler({
+                'handler_type': 'stream', 
+                'level': logging.INFO, 
+                'format': '%(name)s - %(levelname)s - %(message)s'
+            })
             
             args_repr = [repr(a) for a in args]
             kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
