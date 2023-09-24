@@ -134,10 +134,12 @@ class Logger:
 def log(logger_name=None, exception_handling=None):
     
     def decorator_log(func):
+        logger = Logger().get_logger(logger_name)
+        
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            logger = Logger().get_logger(logger_name)
-
+            kwargs['logger'] = logger
+            
             args_repr = [repr(a) for a in args]
             kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
