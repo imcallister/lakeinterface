@@ -2,11 +2,12 @@
 
 # %% auto 0
 __all__ = ['CONSOLE_LOG_HANDLER', 'CLOUDWATCH_LOG_HANDLER', 'LOG_HANDLERS', 'SUPPORTED_INTERFACES', 'SUPPORTED_LOG_HANDLERS',
-           'load_lake_interfaces', 'unzip', 'func_timer']
+           'load_lake_interfaces', 'datalake_interface', 'unzip', 'func_timer']
 
 # %% ../nbs/10_datalake.ipynb 3
 import logging
 from time import time
+import functools
 
 from lakeinterface.logger import Logger
 from lakeinterface.config import ConfigManager
@@ -77,11 +78,34 @@ def load_lake_interfaces(
         
     return interfaces
 
-# %% ../nbs/10_datalake.ipynb 10
+# %% ../nbs/10_datalake.ipynb 9
+def datalake_interface(config_name='bankdata', log_handlers=['console']):
+    
+    def inner(func):
+        li = load_lake_interfaces(
+            config_name=config_name,
+            logger_name='bankdata',
+            interface_names=['lake'],
+            log_handlers=log_handlers
+        )
+
+        datalake = li['lake']
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            kwargs['datalake'] = datalake
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return inner
+    
+
+# %% ../nbs/10_datalake.ipynb 14
 from io import BytesIO
 import zipfile
 
-# %% ../nbs/10_datalake.ipynb 11
+# %% ../nbs/10_datalake.ipynb 15
 def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None, include_pattern=None):
     logs = [
         '-' * 30,
@@ -116,7 +140,7 @@ def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None,
     return logs
 
 
-# %% ../nbs/10_datalake.ipynb 13
+# %% ../nbs/10_datalake.ipynb 17
 def func_timer(func):
     # This function shows the execution time of 
     # the function object passed
