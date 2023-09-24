@@ -134,16 +134,17 @@ class Logger:
 def log(logger_name=None, exception_handling=None):
     
     def decorator_log(func):
-        logger = Logger().get_logger(logger_name)
+        log_class = Logger()
+        log_class.add_stream_handler({
+            'handler_type': 'stream', 
+            'level': logging.INFO, 
+            'format': '%(name)s - %(levelname)s - %(message)s'
+        })
+        logger = log_class.get_logger(logger_name)
         
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             kwargs['logger'] = logger
-            logger.add_stream_handler({
-                'handler_type': 'stream', 
-                'level': logging.INFO, 
-                'format': '%(name)s - %(levelname)s - %(message)s'
-            })
             
             args_repr = [repr(a) for a in args]
             kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
