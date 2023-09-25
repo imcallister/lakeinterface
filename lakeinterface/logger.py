@@ -131,16 +131,27 @@ class Logger:
             logger.removeHandler(logger.handlers[0])
 
 # %% ../nbs/01a_logger.ipynb 5
-def log(logger_name=None, exception_handling=None):
+def log(logger_name='default', exception_handling=None):
     
     def decorator_log(func):
-        log_class = Logger()
-        log_class.add_stream_handler({
-            'handler_type': 'stream', 
-            'level': logging.INFO, 
-            'format': '%(name)s - %(levelname)s - %(message)s'
-        })
-        logger = log_class.get_logger(logger_name)
+        
+        handler_config = [
+            {
+                'handler_type': 'stream', 
+                'level': logging.DEBUG, 
+                'format': '%(name)s - %(levelname)s - %(message)s'
+            }
+        ]
+
+        logger = Logger()
+
+        logger.configure(
+            handler_config,
+            logger_name=logger_name,
+        )
+
+
+        logger = Logger().get_logger(logger_name)
         
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
