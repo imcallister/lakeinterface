@@ -140,7 +140,7 @@ class Datalake(object):
 
     def save_json(self, path, data, timestamp=None):
         if timestamp:
-            key = f'{path}/timestamp={timestamp}/data.json'
+            key = f'{path}/{timestamp}/data.json'
         else:
             key = f'{path}/data.json'
 
