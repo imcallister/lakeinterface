@@ -17,12 +17,26 @@ from lakeinterface.config import ConfigManager
 
 # %% ../nbs/02_s3.ipynb 3
 def most_recent(keys, prefix):
+    file_types = {o.split('/')[-1] for o in keys}
+    
+    if len(file_types) > 1:
+        raise Exception(f"Mixed filetypes found with prefix {prefix}: {','.join(file_types)}")
+    else:
+        file_type = next(iter(file_types))
+
     dates = [
-        o.replace(prefix, '').replace('data.parquet', '').replace('/', '')
+        o.replace(prefix, '').replace(file_type, '').replace('/', '')
         for o in keys
     ]
-    latest = max(parse(d) for d in dates).strftime('%Y%m%d')
-    return f'{prefix}/{latest}/data.parquet'
+
+    timestamp_lengths = {len(d) for d in dates}
+    
+    if len({len(d) for d in dates}) > 1:
+        raise Exception(f'Mixed timestamp formats found with prefix {prefix}')
+    else:
+        latest = max(dates)
+    
+    return f'{prefix}/{latest}/{file_type}'
 
 
 # %% ../nbs/02_s3.ipynb 4
@@ -72,6 +86,9 @@ class Datalake(object):
      
     put(path, df, timestamp=None):
         Saves a dataframe as parquet to specified path with an optional timestamp that will be inserted into path
+        
+    upload(file_obj, destination_folder, filename, timestamp=None):
+        Function for saving general file formats to specified destination in S3 with an optional timestamp that will be inserted into path
     
     get(path):
         Loads parquet object from specified path as a dataframe
@@ -127,7 +144,14 @@ class Datalake(object):
             print(f'No objects found with path: {key}. {e}')
             return None
 
-        return self.load_parquet(key)
+        file_type = key.split('/')[-1]
+        if file_type not in ['data.parquet', 'data.json']:
+            raise Exception(f'.get not implemented for files of type {file_type}')
+        
+        if file_type == 'data.parquet':
+            return self.load_parquet(key)
+        elif file_type == 'data.json':
+            return self.load_json(key)
     
     
     def list_objects(self, prefix):
@@ -173,6 +197,18 @@ class Datalake(object):
             df.write_parquet(f)
         
         return
+    
+    def upload(self, file_obj, destination_folder, filename, timestamp=None):
+        if timestamp:
+            key = f'{destination_folder}/{timestamp}/{filename}'
+        else:
+            key = f'{destination_folder}/{filename}'
+            
+        return self.s3.upload_fileobj(
+            Fileobj=file_obj,
+            Bucket=self.bucket,
+            Key=key
+        )
     
     def most_recent(self, prefix):
         matched_objects = self.list_objects(prefix=prefix)
