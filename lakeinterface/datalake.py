@@ -13,7 +13,7 @@ from dateutil.parser import parse
 from io import BytesIO
 
 from lakeinterface.config import ConfigManager
-
+from lakeinterface.config import lake_config
 
 # %% ../nbs/02_s3.ipynb 3
 def most_recent(keys, prefix):
@@ -39,7 +39,7 @@ def most_recent(keys, prefix):
     return f'{prefix}/{latest}/{file_type}'
 
 
-# %% ../nbs/02_s3.ipynb 4
+# %% ../nbs/02_s3.ipynb 7
 DEFAULT_REGION = 'us-east-1'
 
 class S3ObjectNotFound(Exception):
@@ -49,7 +49,6 @@ class S3ObjectNotFound(Exception):
 class Datalake(object):
     """
     A class to wrap interface to an AWS S3 datalake
-    Implemented as a singleton to reduce number of live sessions
     ...
 
     Attributes
@@ -94,23 +93,17 @@ class Datalake(object):
         Loads parquet object from specified path as a dataframe
 
     """
-    _instance = None
-
-    def __new__(cls, config, profile_name=None):
-        if cls._instance is None:
-            cls._instance = super(Datalake, cls).__new__(cls)
-            # Put any initialization here.
-        return cls._instance
     
-    def __init__(self, config, profile_name=None):
-        if profile_name:
-            self.session = boto3.session.Session(profile_name=profile_name)
+    def __init__(self, config_name, aws_profile=None):
+        if aws_profile:
+            self.session = boto3.session.Session(profile_name=aws_profile)
         else:
             self.session = boto3.session.Session(region_name=DEFAULT_REGION)
         
+        config = lake_config(config_name, aws_profile=aws_profile)
         self.bucket = config.get('bucket')
         self.s3 = self.session.client('s3')
-        self.fs = s3fs.S3FileSystem(profile=profile_name)
+        self.fs = s3fs.S3FileSystem(profile=aws_profile)
         
     def get_object(self, key):
         try:

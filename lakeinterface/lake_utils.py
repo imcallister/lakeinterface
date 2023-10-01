@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['CONSOLE_LOG_HANDLER', 'CLOUDWATCH_LOG_HANDLER', 'LOG_HANDLERS', 'SUPPORTED_INTERFACES', 'SUPPORTED_LOG_HANDLERS',
-           'lake_interface', 'load_lake_interfaces', 'datalake_interface', 'unzip', 'func_timer']
+           'load_logger', 'lake_interface', 'unzip', 'func_timer']
 
 # %% ../nbs/10_datalake.ipynb 3
 import logging
@@ -39,7 +39,7 @@ SUPPORTED_INTERFACES = {'lake','aurora'}
 SUPPORTED_LOG_HANDLERS = set(LOG_HANDLERS.keys())
 
 # %% ../nbs/10_datalake.ipynb 5
-def lake_interface(
+def load_logger(
     config_name='bankdata',
     logger_name='bankdata',
     aws_profile=None,
@@ -65,55 +65,11 @@ def lake_interface(
     return Datalake(cfg, profile_name=aws_profile)
 
 
-# %% ../nbs/10_datalake.ipynb 6
-def load_lake_interfaces(
-    config_name='bankdata',
-    logger_name='bankdata',
-    aws_profile=None,
-    interface_names=[],
-    log_handlers=[]
-):
-            
-    unsupported_interfaces = list(set(interface_names) - SUPPORTED_INTERFACES)
-    if len(unsupported_interfaces) > 0:
-        raise Exception(f'Unsupported interfaces.\
-            You passed {",".join(unsupported_interfaces)}.\
-            Following are supported:{",".join(SUPPORTED_INTERFACES)}')
-        
-    unsupported_log_handlers = list(set(log_handlers) - SUPPORTED_LOG_HANDLERS)
-    if len(unsupported_log_handlers) > 0:
-        raise Exception(f'Unsupported log handlers.\
-            You passed {",".join(unsupported_log_handlers)}.\
-            Following are supported:{",".join(SUPPORTED_LOG_HANDLERS)}')
-    
-    if len(log_handlers) > 0:
-        logger = Logger()
-        logger.configure(
-            [LOG_HANDLERS.get(h) for h in log_handlers], 
-            logger_name=logger_name
-        )
-
-    cfgmgr = ConfigManager(profile=aws_profile)
-    cfg = cfgmgr.fetch_config(config_name)
-    
-    interfaces = {}
-    if 'lake' in interface_names:
-        interfaces['lake'] = Datalake(cfg, profile_name=aws_profile)
-    
-    if 'aurora' in interface_names:
-        interfaces['aurora'] = Aurora(cfg)
-        
-    return interfaces
-
-# %% ../nbs/10_datalake.ipynb 10
-def datalake_interface(config_name='bankdata', log_handlers=['console']):
+# %% ../nbs/10_datalake.ipynb 7
+def lake_interface(config_name='bankdata', aws_profile=None):
     
     def inner(func):
-        datalake = lake_interface(
-            config_name=config_name,
-            logger_name='bankdata',
-            log_handlers=log_handlers
-        )
+        datalake = Datalake(config_name, aws_profile=aws_profile)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -125,11 +81,11 @@ def datalake_interface(config_name='bankdata', log_handlers=['console']):
     return inner
     
 
-# %% ../nbs/10_datalake.ipynb 15
+# %% ../nbs/10_datalake.ipynb 12
 from io import BytesIO
 import zipfile
 
-# %% ../nbs/10_datalake.ipynb 16
+# %% ../nbs/10_datalake.ipynb 13
 def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None, include_pattern=None):
     logs = [
         '-' * 30,
@@ -164,7 +120,7 @@ def unzip(lake_interface, source_file, destination_folder, exclude_pattern=None,
     return logs
 
 
-# %% ../nbs/10_datalake.ipynb 18
+# %% ../nbs/10_datalake.ipynb 15
 def func_timer(func):
     # This function shows the execution time of 
     # the function object passed
