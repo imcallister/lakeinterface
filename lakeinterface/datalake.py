@@ -59,7 +59,7 @@ class Datalake(object):
     
     Methods
     -------
-    __init__(config, profile='default'):
+    __init__(config_name, aws_profile='default'):
         Initializes the AWS S3 client using AWS profile_name and dict of parameters from ConfigManager
     
     get_object(key):
