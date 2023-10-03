@@ -89,7 +89,7 @@ class Datalake(object):
     upload(file_obj, destination_folder, filename, timestamp=None):
         Function for saving general file formats to specified destination in S3 with an optional timestamp that will be inserted into path
     
-    get(path):
+    get(path, ):
         Loads parquet object from specified path as a dataframe
 
     """
@@ -130,12 +130,12 @@ class Datalake(object):
         obj = self.get_object(key)
         return pl.read_parquet(BytesIO(obj['Body'].read()))
     
-    def get(self, path):
+    def get(self, path, not_found_value=None):
         try:
             key = self.most_recent(path)
         except Exception as e:
             print(f'No objects found with path: {key}. {e}')
-            return None
+            return not_found_value
 
         file_type = key.split('/')[-1]
         if file_type not in ['data.parquet', 'data.json']:
