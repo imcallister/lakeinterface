@@ -134,7 +134,7 @@ class Datalake(object):
         try:
             key = self.most_recent(path)
         except Exception as e:
-            print(f'No objects found with path: {key}. {e}')
+            print(f'No objects found with path: {pth}. {e}')
             return not_found_value
 
         file_type = key.split('/')[-1]
