@@ -14,7 +14,6 @@ pyarrow = "*"
 watchtower = "*"
 polars = "*"
 s3fs = "*"
-lakeinterface = {editable = true, path = "."}
 
 [dev-packages]
 
