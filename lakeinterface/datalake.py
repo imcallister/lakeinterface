@@ -117,7 +117,8 @@ class Datalake(object):
         
     def get_object(self, key):
         try:
-            return self.s3.get_object(Bucket=self.bucket, Key=key)
+            resp = self.s3.get_object(Bucket=self.bucket, Key=key)
+            return resp['Body']
         except Exception as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 raise S3ObjectNotFound('No S3 object with key = %s' % key)
@@ -127,18 +128,18 @@ class Datalake(object):
     def load_csv(self,key, separator=',', skiprows=None, line_terminator=None):
         obj = self.get_object(key)
         if line_terminator:
-            return pl.read_csv(obj['Body'], separator=separator, lineterminator=line_terminator)
+            return pl.read_csv(obj, separator=separator, lineterminator=line_terminator)
         else:
-            return pl.read_csv(obj['Body'], separator=separator)
+            return pl.read_csv(obj, separator=separator)
     
     
     def load_json(self, key):
         obj = self.get_object(key)
-        return json.loads(obj['Body'].read())
+        return json.loads(obj.read())
     
     def load_parquet(self, key):
         obj = self.get_object(key)
-        return pl.read_parquet(BytesIO(obj['Body'].read()))
+        return pl.read_parquet(BytesIO(obj.read()))
     
     def get(self, path, not_found_value=None):
         try:
