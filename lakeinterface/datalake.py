@@ -5,6 +5,7 @@ __all__ = ['DEFAULT_REGION', 'S3ObjectNotFound', 'Datalake']
 
 # %% ../nbs/02_s3.ipynb 2
 import boto3
+import datetime
 import polars as pl
 import s3fs
 import json
