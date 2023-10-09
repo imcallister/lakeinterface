@@ -39,6 +39,12 @@ def most_recent(keys, prefix):
     return f'{prefix}/{latest}/{file_type}'
 
 
+def is_timestamp(ts):
+    try:
+        return type(parse(ts)) == datetime.datetime
+    except:
+        return False
+
 # %% ../nbs/02_s3.ipynb 7
 DEFAULT_REGION = 'us-east-1'
 
@@ -82,6 +88,9 @@ class Datalake(object):
     
     most_recent(prefix):
         For a given S3 prefix returns object has most recent timestamp
+        
+    most_recent_folder(prefix):
+        For a given S3 prefix returns folder that has most recent timestamp
      
     put(path, df, timestamp=None):
         Saves a dataframe as parquet to specified path with an optional timestamp that will be inserted into path
@@ -219,4 +228,14 @@ class Datalake(object):
             return matched_objects[0]
 
     
+    def most_recent_folder(self, folder):
+        if folder[-1] != '/':
+            folder += '/'
+            
+        timestamps = [i.replace(folder, '').split('/')[0] for i in self.list_objects(folder)]
+        if all(is_timestamp(ts) for ts in timestamps):
+            return max(timestamps)
+        else:
+            print(f'Names of child folders do not all end with timestamp. Folder name = {folder}')
+            return
 
