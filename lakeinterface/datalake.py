@@ -142,9 +142,8 @@ class Datalake(object):
         return pl.read_parquet(BytesIO(obj.read()))
     
     def get(self, path, not_found_value=None):
-        try:
-            key = self.most_recent(path)
-        except Exception as e:
+        key = self.most_recent(path)
+        if key is None:
             print(f'No objects found with path: {path}.')
             return not_found_value
 
@@ -163,7 +162,7 @@ class Datalake(object):
         paginator = self.s3.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
 
-        return sum([[obj['Key'] for obj in page['Contents']] for page in pages], [])
+        return sum([[obj['Key'] for obj in page.get('Contents',[])] for page in pages], [])
     
 
     def save_json(self, path, data, timestamp=None):
@@ -224,7 +223,6 @@ class Datalake(object):
                 print(f'Multiple objects found for prefix {prefix}. Unable to find most recent.')
                 return None
         elif len(matched_objects) == 0:
-            print(f'No objects found for prefix {prefix}')
             return None
         else:
             return matched_objects[0]
