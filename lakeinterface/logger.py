@@ -129,7 +129,7 @@ def predefined_logger(logger_name, handlers):
     return logging.getLogger(logger_name)
 
 
-# %% ../nbs/01a_logger.ipynb 13
+# %% ../nbs/01a_logger.ipynb 12
 def log(logger_name='default', exception_handling=None):
     
     def decorator_log(func):
