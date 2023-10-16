@@ -12,20 +12,12 @@ You will need following libraries
 ``` console
 $ pip install polars==0.18.8
 $ pip install boto3==1.26.114
-$ pip install nbdev==2.3.12
 $ pip install jupyterlab==3.6.3
 $ pip install pyarrow==12.0.1
 $ pip install watchtower==3.0.1
 $ pip install s3fs==0.4.2
 ```
 
-There are a couple of nbdev extensions needed:
-
-``` console
-$ nbdev_install_hooks
-$ nbdev_install_quarto
-$ pip install jupyterlab-quarto==0.1.45
-```
 
 For use in the notebooks also install the library created by nbdev from
 top level of project:
@@ -34,8 +26,36 @@ top level of project:
 $ pip install -e .
 ```
 
-Documentation can be viewed locally with
+## Testing Setup
 
-``` console
-$ nbdev_preview
+### S3 Bucket setup
+- create a test bucket (something like *test-continuous-integration*)
+
+### IAM Role setup
+- *github-actions* role
+
+### Systems Manager Parameter Store
+
+Following parameters need to be setup in AWS Systems Manager
+
+- *example/param1 = foo*
+- *example/param2 = bar*
+- *example/bucket = [name of S3 bucket created above]*
+
+### S3 objects required for pytest
+
+```code
+import polars as pl
+from lakeinterface.datalake import Datalake
+
+test_lake = Datalake('example')
+
+d = {'col1': [1, 2], 'col2': [3, 4]}
+df = pl.DataFrame(data=d)
+test_lake.put('pytest/example1', df)
+
+d = {'col1': [1, 2], 'col2': [3, 4]}
+df = pl.DataFrame(data=d)
+test_lake.put('pytest/example_with_timestamp', df, timestamp='20991021')
+test_lake.put('pytest/example_with_timestamp', df, timestamp='20231021')
 ```
