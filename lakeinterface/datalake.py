@@ -13,7 +13,6 @@ from dateutil.parser import parse
 
 from io import BytesIO
 
-from lakeinterface.config import ConfigManager
 from lakeinterface.config import lake_config
 
 # %% ../nbs/02_s3.ipynb 3
@@ -67,7 +66,7 @@ class Datalake(object):
     Methods
     -------
     __init__(config_name, aws_profile='default'):
-        Initializes the AWS S3 client using AWS profile_name and dict of parameters from ConfigManager
+        Initializes the AWS S3 client using AWS profile_name and dict of parameters stored in AWS Systems Manager
     
     get_object(key):
         Core method for loading objects using boto3 S3 client
@@ -144,8 +143,10 @@ class Datalake(object):
     def get(self, path, not_found_value=None):
         key = self.most_recent(path)
         if key is None:
-            print(f'No objects found with path: {path}.')
-            return not_found_value
+            if not_found_value:
+                return not_found_value
+            else:
+                raise S3ObjectNotFound('No S3 object at path = %s' % path)
 
         file_type = key.split('/')[-1]
         if file_type not in ['data.parquet', 'data.json']:
