@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "lakeinterface"
-version = "v1.0.14"
+version = "v1.0.15"
 description = ""
 authors = ["Ian McAllister <ian@mcallisternevins.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "<3.13,>=3.9"
+python = "<3.12,>=3.9"
 boto3 = "1.28.12"
 pyarrow = "12.0.1"
 watchtower = "3.0.1"
