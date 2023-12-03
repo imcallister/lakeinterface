@@ -163,7 +163,7 @@ class Datalake(object):
         paginator = self.s3.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
 
-        return sum([[obj['Key'] for obj in page.get('Contents',[])] for page in pages], [])
+        return sum([[obj['Key'] for obj in page.get('Contents',[]) if obj['Size']>0] for page in pages], [])
     
 
     def save_json(self, path, data, timestamp=None):
