@@ -23,5 +23,21 @@ class S3Object():
             else:
                 raise
     
+    def fetch_metadata(self):
+        resp = self.session.head_object(Bucket=self.bucket, Key=self.path)
+        return resp['Metadata']
+    
+    def update_metadata(self, metadata_updates):
+        metadata = self.fetch_metadata()
+        metadata.update(metadata_updates)
+        resp = self.session.copy_object(
+            Bucket=self.bucket,
+            CopySource={'Bucket': self.bucket, 'Key': self.path},
+            Key=self.path,
+            Metadata=metadata,
+            MetadataDirective='REPLACE'
+        )
+        return resp['ResponseMetadata']['HTTPStatusCode']
+        
     def read_object(self):
         pass

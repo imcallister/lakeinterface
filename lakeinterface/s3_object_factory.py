@@ -5,6 +5,7 @@ import datetime
 from lakeinterface.parquet_s3_object import ParquetS3Object
 from lakeinterface.json_s3_object import JSONS3Object
 from lakeinterface.csv_s3_object import CSVS3Object
+from lakeinterface.s3_object import S3Object
 
 
 def most_recent(keys, prefix):
@@ -77,6 +78,15 @@ class S3ObjectFactory():
             print(f'Names of child folders do not all end with timestamp. Folder name = {folder}')
             return
 
+    def fetch_metadata(self, path):
+        key = self.most_recent(path)
+        obj = S3Object(self.s3, self.bucket, key)
+        return obj.fetch_metadata()
+    
+    def update_metadata(self, path, metadata_updates):
+        key = self.most_recent(path)
+        obj = S3Object(self.s3, self.bucket, key)
+        return obj.update_metadata(metadata_updates)
 
     def fetch_object(self, path, not_found_value=None, kwargs={}):
         key = self.most_recent(path)
