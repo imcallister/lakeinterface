@@ -1,51 +1,12 @@
-
-
 import boto3
-import datetime
-import polars as pl
 import s3fs
-import json
 from dateutil.parser import parse
 
-from io import BytesIO
-
 from lakeinterface.config import lake_config
-
-
-def most_recent(keys, prefix):
-    file_types = {o.split('/')[-1] for o in keys}
-    
-    if len(file_types) > 1:
-        raise Exception(f"Mixed filetypes found with prefix {prefix}: {','.join(file_types)}")
-    else:
-        file_type = next(iter(file_types))
-
-    dates = [
-        o.replace(prefix, '').replace(file_type, '').replace('/', '')
-        for o in keys
-    ]
-
-    timestamp_lengths = {len(d) for d in dates}
-    
-    if len({len(d) for d in dates}) > 1:
-        raise Exception(f'Mixed timestamp formats found with prefix {prefix}')
-    else:
-        latest = max(dates)
-    
-    return f'{prefix}/{latest}/{file_type}'
-
-
-def is_timestamp(ts):
-    try:
-        return type(parse(ts)) == datetime.datetime
-    except:
-        return False
+from lakeinterface.s3_object_factory import S3ObjectFactory
 
 
 DEFAULT_REGION = 'us-east-1'
-
-class S3ObjectNotFound(Exception):
-    pass
 
 
 class Datalake(object):
@@ -106,133 +67,27 @@ class Datalake(object):
             self.session = boto3.session.Session(region_name=DEFAULT_REGION)
         
         config = lake_config(config_name, aws_profile=aws_profile)
-        self.bucket = config.get('bucket')
-        self.s3 = self.session.client('s3')
-        self.fs = s3fs.S3FileSystem(profile=aws_profile)
-        
-    def get_object(self, key):
-        try:
-            resp = self.s3.get_object(Bucket=self.bucket, Key=key)
-            return resp['Body']
-        except Exception as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
-                raise S3ObjectNotFound('No S3 object with key = %s' % key)
-            else:
-                raise
 
-    def load_csv(self,key, separator=',', skiprows=None, line_terminator=None):
-        obj = self.get_object(key)
-        if line_terminator:
-            return pl.read_csv(obj, separator=separator, lineterminator=line_terminator)
-        else:
-            return pl.read_csv(obj, separator=separator)
-    
-    
-    def load_json(self, key):
-        obj = self.get_object(key)
-        return json.loads(obj.read())
-    
-    def load_parquet(self, key):
-        obj = self.get_object(key)
-        return pl.read_parquet(BytesIO(obj.read()))
-    
-    def get(self, path, not_found_value=None):
-        key = self.most_recent(path)
-        if key is None:
-            if not_found_value:
-                return not_found_value
-            else:
-                raise S3ObjectNotFound('No S3 object at path = %s' % path)
-
-        file_type = key.split('/')[-1]
-        if file_type not in ['data.parquet', 'data.json']:
-            raise Exception(f'.get not implemented for files of type {file_type}')
-        
-        if file_type == 'data.parquet':
-            return self.load_parquet(key)
-        elif file_type == 'data.json':
-            return self.load_json(key)
-    
-    
-    def list_objects(self, prefix):
-        
-        paginator = self.s3.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
-
-        return sum([[obj['Key'] for obj in page.get('Contents',[]) if obj['Size']>0] for page in pages], [])
-    
-
-    def save_json(self, path, data, timestamp=None):
-        if timestamp:
-            key = f'{path}/{timestamp}/data.json'
-        else:
-            key = f'{path}/data.json'
-
-        return self.put_object(key, json.dumps(data))
-        
-    def put_object(self, key, data, metadata={}):
-        try:
-            resp = self.s3.put_object(
-                Bucket=self.bucket,
-                Key=key,
-                Body=data
-            )
-            status_code = resp['ResponseMetadata']['HTTPStatusCode']
-            if status_code == 200:
-                return True
-            else:
-                raise Exception(f'Unknown error. Status code: {status_code}')
-        except Exception as e:
-            raise Exception(f'Unknown error in put object for {key}. {str(e)}')
-
-    
-            
-    def put(self, path, df, timestamp=None):
-        if timestamp:
-            key = f'{path}/{timestamp}/data.parquet'
-        else:
-            key = f'{path}/data.parquet'
-
-        with self.fs.open(f'{self.bucket}/{key}', mode='wb') as f:
-            df.write_parquet(f)
-        
-        return
-    
-    def upload(self, file_obj, destination_folder, filename, timestamp=None):
-        if timestamp:
-            key = f'{destination_folder}/{timestamp}/{filename}'
-        else:
-            key = f'{destination_folder}/{filename}'
-            
-        return self.s3.upload_fileobj(
-            Fileobj=file_obj,
-            Bucket=self.bucket,
-            Key=key
+        self.s3 = S3ObjectFactory(
+            self.session, 
+            config.get('bucket'), 
+            s3fs.S3FileSystem(profile=aws_profile)
         )
-    
-    def most_recent(self, prefix):
-        matched_objects = self.list_objects(prefix=prefix)
-        
-        if len(matched_objects) > 1:
-            try:
-                return most_recent(matched_objects, prefix)
-            except:
-                print(f'Multiple objects found for prefix {prefix}. Unable to find most recent.')
-                return None
-        elif len(matched_objects) == 0:
-            return None
-        else:
-            return matched_objects[0]
 
+    def get(self, path, not_found_value=None):
+        return self.s3.fetch_object(path, not_found_value=not_found_value)
+
+    def list_objects(self, prefix):
+        return self.s3.list_objects(prefix=prefix)
+
+    def most_recent(self, prefix):
+        return self.s3.most_recent(prefix=prefix)
     
     def most_recent_folder(self, folder):
-        if folder[-1] != '/':
-            folder += '/'
-            
-        timestamps = [i.replace(folder, '').split('/')[0] for i in self.list_objects(folder)]
-        if all(is_timestamp(ts) for ts in timestamps):
-            return max(timestamps)
-        else:
-            print(f'Names of child folders do not all end with timestamp. Folder name = {folder}')
-            return
+        return self.s3.most_recent_folder(folder)
 
+    def put(self, path, obj, timestamp=None, file_type=None):
+        return self.s3.save_object(path, obj, timestamp=timestamp, file_type=file_type)
+    
+    def upload(self, file_obj, destination_folder, filename, timestamp=None):
+        return self.s3.upload(file_obj, destination_folder, filename, timestamp=timestamp)
