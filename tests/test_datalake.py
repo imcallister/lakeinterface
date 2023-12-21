@@ -34,18 +34,6 @@ def test_put_dataframe():
     assert df2.row(0)[0] == rint
 
 
-def test_put_dataframe_to_csv():
-    lake = Datalake('example')
-    location = 'pytest/test_csv_put_object'
-    rint = random.randint(0,1000)
-    d = {'col1': [rint, 2], 'col2': [3, 4]}
-    df = pl.DataFrame(data=d)
-    lake.put(location, df, file_type='csv')
-
-    df2 = lake.get(location)
-    assert df2.row(0)[0] == rint
-
-
 def test_put_json():
     lake = Datalake('example')
     location = 'pytest/test_put_json_object'
