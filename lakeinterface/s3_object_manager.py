@@ -83,10 +83,10 @@ class S3ObjectManager():
         obj = S3Object(self.s3, self.bucket, key)
         return obj.fetch_metadata()
     
-    def update_metadata(self, path, metadata_updates):
+    def update_metadata(self, path, metadata_updates, overwrite=False):
         key = self.most_recent(path)
         obj = S3Object(self.s3, self.bucket, key)
-        return obj.update_metadata(metadata_updates)
+        return obj.update_metadata(metadata_updates, overwrite=overwrite)
 
     def fetch_object(self, path, not_found_value=None, kwargs={}):
         key = self.most_recent(path)
@@ -108,7 +108,7 @@ class S3ObjectManager():
 
         return obj.read_object()
         
-    def save_object(self, path, content, timestamp=None, file_type=None, kwargs={}):
+    def save_object(self, path, content, timestamp=None, metadata=None):
         if type(content) == pl.DataFrame:
             file_type = 'parquet'
         else:
@@ -124,10 +124,8 @@ class S3ObjectManager():
                 obj = ParquetS3Object(self.s3, self.bucket, key, file_system=self.fs)
             case 'json':
                 obj = JSONS3Object(self.s3, self.bucket, key)
-            case _:
-                raise Exception(f'Lakeinterface not implemented for files of type {file_type}')
-
-        return obj.save_object(key, content)
+        
+        return obj.save_object(key, content, metadata=metadata)
     
     def upload(self, file_obj, destination_folder, filename, timestamp=None):
         if timestamp:
@@ -147,12 +145,6 @@ class S3ObjectManager():
         else:
             key = f'{destination_folder}/{filename}'
             
-        # resp = self.s3.upload_fileobj(
-        #     Fileobj=file_obj,
-        #     Bucket=self.bucket,
-        #     Key=key
-        # )
-
         resp = self.s3.put_object(
             Bucket=self.bucket,
             Key=key,

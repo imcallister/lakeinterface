@@ -27,9 +27,17 @@ class S3Object():
         resp = self.session.head_object(Bucket=self.bucket, Key=self.path)
         return resp['Metadata']
     
-    def update_metadata(self, metadata_updates):
-        metadata = self.fetch_metadata()
-        metadata.update(metadata_updates)
+    def update_metadata(self, metadata_updates, overwrite=False):
+        
+        if overwrite:
+            metadata = metadata_updates
+        else:
+            metadata = self.fetch_metadata()
+            if metadata:
+                metadata.update(metadata_updates)
+            else:
+                metadata = metadata_updates
+                
         resp = self.session.copy_object(
             Bucket=self.bucket,
             CopySource={'Bucket': self.bucket, 'Key': self.path},

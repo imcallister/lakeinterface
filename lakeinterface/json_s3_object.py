@@ -9,7 +9,7 @@ class JSONS3Object(S3Object):
         content = self.fetch_object()
         return json.loads(content.read())
 
-    def save_object(self, key, obj):
+    def save_object(self, key, obj, metadata=None):
         try:
             resp = self.session.put_object(
                 Bucket=self.bucket,
@@ -18,9 +18,13 @@ class JSONS3Object(S3Object):
             )
             status_code = resp['ResponseMetadata']['HTTPStatusCode']
             if status_code == 200:
-                return True
+                if metadata:
+                    self.update_metadata(metadata, overwrite=True)
+                return
             else:
                 raise Exception(f'Unknown error. Status code: {status_code}')
         except Exception as e:
             raise Exception(f'Unknown error in put object for {key}. {str(e)}')
+        
+        
     

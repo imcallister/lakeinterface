@@ -71,6 +71,12 @@ class Datalake(object):
     def get(self, path, not_found_value=None):
         return self.s3.fetch_object(path, not_found_value=not_found_value)
 
+    def get_metadata(self, path):
+        return self.s3.fetch_metadata(path)
+    
+    def update_metadata(self, path, updates, overwrite=False):
+        return self.s3.update_metadata(path, updates, overwrite=overwrite)
+
     def list_objects(self, prefix):
         return self.s3.list_objects(prefix=prefix)
 
@@ -80,8 +86,8 @@ class Datalake(object):
     def most_recent_folder(self, folder):
         return self.s3.most_recent_folder(folder)
 
-    def put(self, path, obj, timestamp=None, file_type=None):
-        return self.s3.save_object(path, obj, timestamp=timestamp, file_type=file_type)
+    def put(self, path, obj, timestamp=None, metadata=None):
+        return self.s3.save_object(path, obj, timestamp=timestamp, metadata=metadata)
     
     def save_file(self, file_obj, destination_folder, filename, timestamp=None):
         return self.s3.save_file(file_obj, destination_folder, filename, timestamp=timestamp)

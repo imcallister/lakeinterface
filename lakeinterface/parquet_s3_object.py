@@ -10,7 +10,11 @@ class ParquetS3Object(S3Object):
         content = self.fetch_object()
         return pl.read_parquet(BytesIO(content.read()))
     
-    def save_object(self, key, obj):
+    def save_object(self, key, obj, metadata=None):
         with self.fs.open(f'{self.bucket}/{key}', mode='wb') as f:
             obj.write_parquet(f)
+        
+        if metadata:
+            self.update_metadata(metadata, overwrite=True)
+
         
