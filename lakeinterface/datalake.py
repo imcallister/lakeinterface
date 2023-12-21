@@ -3,7 +3,7 @@ import s3fs
 from dateutil.parser import parse
 
 from lakeinterface.config import lake_config
-from lakeinterface.s3_object_factory import S3ObjectFactory
+from lakeinterface.s3_object_manager import S3ObjectManager
 
 
 DEFAULT_REGION = 'us-east-1'
@@ -11,20 +11,44 @@ DEFAULT_REGION = 'us-east-1'
 
 class Datalake(object):
     """
-    A class to wrap interface to an AWS S3 datalake
+    A class to wrap interface to an AWS S3 datalake.
+
+    Two primary file types are supported: parquet and json.  The file type is inferred from the file extension.
+    The get and put methods are the core methods for loading and saving objects from/to memory.  
+    The assumption is that data transformation is done on either polars dataframes or json objects.
+
+    There are additional utility methods for the onboarding of data in arbitrary file formats into the datalake.
+
     ...
 
     Attributes
     ----------
     session: a boto3 session
-    s3 : a boto3 S3 client
-    bucket : S3 bucket location of lake
+    s3 : an instance of S3ObjectManager class defined in lakeinterface/s3_object_manager.py
     
     Methods
     -------
     __init__(config_name, aws_profile='default'):
         Initializes the AWS S3 client using AWS profile_name and dict of parameters stored in AWS Systems Manager
     
+    get(path, not_found_value=None):
+        Loads parquet from specified path into a dataframe or a json object into the equivalent python object
+
+    put(path, obj, timestamp=None):
+        Saves dataframes as parquet and json-like objects to json at the specified path with an optional timestamp that will be inserted into path
+    
+    list_objects(prefix):
+        Lists all objects with S3 prefix = key
+    
+    most_recent(prefix):
+        For a given S3 prefix returns object has most recent timestamp
+        
+    most_recent_folder(prefix):
+        For a given S3 prefix returns folder that has most recent timestamp
+    
+    
+        
+
     get_object(key):
         Core method for loading objects using boto3 S3 client
     
@@ -34,8 +58,6 @@ class Datalake(object):
     load_json(key):
         Loads json object with S3 prefix = key
         
-    list_objects(prefix):
-        Lists all objects with S3 prefix = key
     
     save_json(path, data, timestamp=None):
         Saves json object to specified path with an optional timestamp that will be inserted into path
@@ -43,21 +65,12 @@ class Datalake(object):
     put_object(key, data, metadata={}):
         Core method for saving objects using boto3 S3 client
     
-    most_recent(prefix):
-        For a given S3 prefix returns object has most recent timestamp
-        
-    most_recent_folder(prefix):
-        For a given S3 prefix returns folder that has most recent timestamp
      
-    put(path, df, timestamp=None):
-        Saves a dataframe as parquet to specified path with an optional timestamp that will be inserted into path
         
     upload(file_obj, destination_folder, filename, timestamp=None):
         Function for saving general file formats to specified destination in S3 with an optional timestamp that will be inserted into path
     
-    get(path, ):
-        Loads parquet object from specified path as a dataframe
-
+    
     """
     
     def __init__(self, config_name, aws_profile=None):
@@ -68,7 +81,7 @@ class Datalake(object):
         
         config = lake_config(config_name, aws_profile=aws_profile)
 
-        self.s3 = S3ObjectFactory(
+        self.s3 = S3ObjectManager(
             self.session, 
             config.get('bucket'), 
             s3fs.S3FileSystem(profile=aws_profile)
@@ -91,3 +104,9 @@ class Datalake(object):
     
     def upload(self, file_obj, destination_folder, filename, timestamp=None):
         return self.s3.upload(file_obj, destination_folder, filename, timestamp=timestamp)
+    
+    def save_file(self, file_obj, destination_folder, filename, timestamp=None):
+        return self.s3.save_file(file_obj, destination_folder, filename, timestamp=timestamp)
+
+    def load_file(self, path):
+        return self.s3.load_file(path)

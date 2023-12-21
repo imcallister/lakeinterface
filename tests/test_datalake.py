@@ -3,7 +3,7 @@ import random
 import polars as pl
 
 
-from lakeinterface.s3_object_factory import S3ObjectNotFound
+from lakeinterface.s3_object_manager import S3ObjectNotFound
 from lakeinterface.datalake import Datalake
  
 

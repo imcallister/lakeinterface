@@ -39,7 +39,7 @@ class S3ObjectNotFound(Exception):
     pass
 
 
-class S3ObjectFactory():
+class S3ObjectManager():
 
     def __init__(self, session, bucket, file_system):
         self.bucket = bucket
@@ -103,17 +103,13 @@ class S3ObjectFactory():
                 obj = ParquetS3Object(self.s3, self.bucket, key)
             case 'json':
                 obj = JSONS3Object(self.s3, self.bucket, key)
-            case 'csv':
-                obj = CSVS3Object(self.s3, self.bucket, key, kwargs=kwargs)
             case _:
                 raise Exception(f'Lakeinterface not implemented for files of type {file_type}')
 
         return obj.read_object()
         
     def save_object(self, path, content, timestamp=None, file_type=None, kwargs={}):
-        if file_type:
-            file_type = file_type
-        elif type(content) == pl.DataFrame:
+        if type(content) == pl.DataFrame:
             file_type = 'parquet'
         else:
             file_type = 'json'
@@ -128,8 +124,6 @@ class S3ObjectFactory():
                 obj = ParquetS3Object(self.s3, self.bucket, key, file_system=self.fs)
             case 'json':
                 obj = JSONS3Object(self.s3, self.bucket, key)
-            case 'csv':
-                obj = CSVS3Object(self.s3, self.bucket, key, kwargs=kwargs, file_system=self.fs)
             case _:
                 raise Exception(f'Lakeinterface not implemented for files of type {file_type}')
 
@@ -146,3 +140,32 @@ class S3ObjectFactory():
             Bucket=self.bucket,
             Key=key
         )
+    
+    def save_file(self, file_obj, destination_folder, filename, timestamp=None):
+        if timestamp:
+            key = f'{destination_folder}/{timestamp}/{filename}'
+        else:
+            key = f'{destination_folder}/{filename}'
+            
+        # resp = self.s3.upload_fileobj(
+        #     Fileobj=file_obj,
+        #     Bucket=self.bucket,
+        #     Key=key
+        # )
+
+        resp = self.s3.put_object(
+            Bucket=self.bucket,
+            Key=key,
+            Body=file_obj
+        )
+        return resp['ResponseMetadata']['HTTPStatusCode']
+    
+    def load_file(self, key):
+        try:
+            resp = self.s3.get_object(Bucket=self.bucket, Key=key)
+            return resp['Body']
+        except Exception as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                raise S3ObjectNotFound('No S3 object with key = %s' % key)
+            else:
+                raise
