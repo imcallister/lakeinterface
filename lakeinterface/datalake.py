@@ -1,8 +1,6 @@
 import boto3
 import s3fs
-from dateutil.parser import parse
 
-from lakeinterface.config import lake_config
 from lakeinterface.s3_object_manager import S3ObjectManager
 
 
@@ -54,17 +52,14 @@ class Datalake(object):
     
     """
     
-    def __init__(self, config_name, aws_profile=None):
+    def __init__(self, aws_profile=None):
         if aws_profile:
             self.session = boto3.session.Session(profile_name=aws_profile)
         else:
             self.session = boto3.session.Session(region_name=DEFAULT_REGION)
         
-        config = lake_config(config_name, aws_profile=aws_profile)
-
         self.s3 = S3ObjectManager(
             self.session, 
-            config.get('bucket'), 
             s3fs.S3FileSystem(profile=aws_profile)
         )
 
@@ -77,11 +72,11 @@ class Datalake(object):
     def update_metadata(self, path, updates, overwrite=False):
         return self.s3.update_metadata(path, updates, overwrite=overwrite)
 
-    def list_objects(self, prefix):
-        return self.s3.list_objects(prefix=prefix)
+    def list_objects(self, path):
+        return self.s3.list_objects(path)
 
-    def most_recent(self, prefix):
-        return self.s3.most_recent(prefix=prefix)
+    def most_recent(self, path):
+        return self.s3.most_recent(path)
     
     def most_recent_folder(self, folder):
         return self.s3.most_recent_folder(folder)
