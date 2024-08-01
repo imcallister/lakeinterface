@@ -62,7 +62,11 @@ class S3ObjectManager():
         bucket, prefix = parse_path(path)
         paginator = self.s3.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
-        return sum([[f"{bucket}/{obj['Key']}" for obj in page.get('Contents',[]) if obj['Size']>0] for page in pages], [])
+        all_objects = sum([[f"{bucket}/{obj['Key']}" for obj in page.get('Contents',[]) if obj['Size']>0] for page in pages], [])
+
+        # we do not want to include objects that are incomp;ete matches
+        # eg if prefix == foo/bar/group1 then we want to exclude foo/bar/group10
+        return [o for o in all_objects if f'{bucket}/{prefix}/' in o or f'{bucket}/{prefix}' == o]
     
 
     def most_recent(self, path):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lakeinterface"
-version = "v1.0.19"
+version = "v1.0.20"
 description = ""
 authors = ["Ian McAllister <ian@mcallisternevins.com>"]
 readme = "README.md"
