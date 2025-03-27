@@ -11,7 +11,9 @@ class ParquetS3Object(S3Object):
         return pl.read_parquet(BytesIO(content.read()))
     
     def save_object(self, key, obj, metadata=None):
-        with self.fs.open(f'{self.bucket}/{key}', mode='wb') as f:
+        pth = f's3://{self.bucket}/{key}'
+        print('writing to', pth)
+        with self.fs.open(pth, mode='wb') as f:
             obj.write_parquet(f)
         
         if metadata:
