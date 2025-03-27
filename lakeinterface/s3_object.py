@@ -1,11 +1,7 @@
+from abc import ABC, abstractmethod
+from lakeinterface.exceptions import S3ObjectNotFound
 
-
-class S3ObjectNotFound(Exception):
-    pass
-
-
-class S3Object():
-
+class S3Object(ABC):
     def __init__(self, s3_session, bucket, path, file_system=None, kwargs={}):
         self.session = s3_session
         self.bucket = bucket
@@ -18,10 +14,9 @@ class S3Object():
             resp = self.session.get_object(Bucket=self.bucket, Key=self.path)
             return resp['Body']
         except Exception as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
-                raise S3ObjectNotFound('No S3 object with key = %s' % self.path)
-            else:
-                raise
+            if hasattr(e, 'response') and e.response['Error']['Code'] == 'NoSuchKey':
+                raise S3ObjectNotFound(f'No S3 object with key = {self.path}')
+            raise
     
     def fetch_metadata(self):
         resp = self.session.head_object(Bucket=self.bucket, Key=self.path)
@@ -47,5 +42,12 @@ class S3Object():
         )
         return resp['ResponseMetadata']['HTTPStatusCode']
         
+    @abstractmethod
     def read_object(self):
+        """Read and parse the S3 object content"""
+        pass
+
+    @abstractmethod 
+    def save_object(self, key, obj, metadata=None):
+        """Save object to S3"""
         pass

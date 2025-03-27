@@ -1,23 +1,21 @@
 [tool.poetry]
 name = "lakeinterface"
-version = "v1.0.20"
+version = "v1.0.21"
 description = ""
 authors = ["Ian McAllister <ian@mcallisternevins.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "<3.12,>=3.9"
-boto3 = "1.28.12"
-pyarrow = "12.0.1"
-watchtower = "3.0.1"
-polars = "0.18.8"
-s3fs = "0.4.2"
-pytest = "^7.4.2"
-python-json-logger = "^2.0.7"
+python = "<3.13,>=3.9"
+polars = "1.6.0"
+boto3 = "^1.31.1"
+s3fs = "^2024.6.1"
 
 
 [tool.poetry.group.dev.dependencies]
-jupyterlab = "4.0.7"
+ipykernel = "^6.29.5"
+jupyterlab = "^4.2.4"
+
 
 [build-system]
 requires = ["poetry-core"]
